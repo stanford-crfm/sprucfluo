@@ -1,0 +1,4 @@
+webdataset~=0.2.4
+datasets~=1.18.4
+zstandard
+transformers
