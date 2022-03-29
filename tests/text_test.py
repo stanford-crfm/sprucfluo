@@ -1,5 +1,7 @@
-import io
 import unittest
+
+import torch
+from torchdata.datapipes.iter import IterableWrapper
 
 from text import *
 
@@ -9,52 +11,51 @@ class MockTokenizer(object):
         self.append_special_tokens = append_special_tokens
 
     def __call__(self, text):
-        text = text.split()
+        if isinstance(text, str):
+            text = [text]
+        text = [t.split() for t in text]
         if self.append_special_tokens:
-            text = text + ['[EOS]']
-        return {"input_ids": text, "attention_mask": [1] * len(text)}
+            text = [t + ['[EOS]'] for t in text]
+        return {"input_ids": text, "attention_mask": [[1] * len(t) for t in text]}
 
 
 class TokenizeTests(unittest.TestCase):
     def test_tokenize_and_group_texts_short_texts(self):
         tokenizer = MockTokenizer(append_special_tokens=False)
         test_data = [
-            {"text": "a a a a a a a a"}, # 8 tokens
-            {"text": "b b b b b b b"}, # 7 tokens
-            {"text": "q q q q q q q q"} # 8 tokens
+            "a a a a a a a a", # 8 tokens
+            "b b b b b b b", # 7 tokens
+            "q q q q q q q q" # 8 tokens
         ]
 
-        proc = tokenize_and_group_texts(tokenizer, max_seq_len=10)
-
-        samples = list(proc(test_data))
+        samples = list(tokenize_and_group_texts(IterableWrapper(test_data), tokenizer, seq_len=10))
         expected_input_ids = [
             ['a'] * 8 + ['b'] * 2,
             ['b'] * 5 + ['q'] * 5,
-            ['q'] * 3
+            # ['q'] * 3
         ]
 
         expected_attention_mask = [
             [1] * 10,
             [1] * 10,
-            [1] * 3
+            # [1] * 3
         ]
 
-        self.assertEqual(len(samples), 3)
-        for i in range(3):
+
+        self.assertEqual(len(samples), 2)
+        for i in range(2):
             self.assertEqual(samples[i]['input_ids'], expected_input_ids[i])
             self.assertEqual(samples[i]['attention_mask'], expected_attention_mask[i])
 
     def test_tokenize_and_group_texts_long_texts(self):
         tokenizer = MockTokenizer(append_special_tokens=False)
         test_data = [
-            {"text": "a a a a a a a a"}, # 8 tokens
-            {"text": "b b b b b b b"}, # 7 tokens
-            {"text": "q q q q q q q q"} # 8 tokens
+            "a a a a a a a a", # 8 tokens
+            "b b b b b b b", # 7 tokens
+            "q q q q q q q q q" # 9 tokens
         ]
 
-        proc = tokenize_and_group_texts(tokenizer, max_seq_len=3)
-
-        samples = list(proc(test_data))
+        samples = list(tokenize_and_group_texts(IterableWrapper(test_data), tokenizer, seq_len=3))
         expected_input_ids = [
             ['a'] * 3,
             ['a'] * 3,
@@ -72,12 +73,6 @@ class TokenizeTests(unittest.TestCase):
         for i in range(3):
             self.assertEqual(samples[i]['input_ids'], expected_input_ids[i])
             self.assertEqual(samples[i]['attention_mask'], expected_attention_mask[i])
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

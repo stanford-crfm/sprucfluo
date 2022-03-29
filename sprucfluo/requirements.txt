@@ -1,4 +1,6 @@
-webdataset~=0.2.4
-datasets~=1.18.4
-zstandard
+webdataset
+datasets
 transformers
+torchdata
+fsspec
+zstandard
