@@ -1,11 +1,19 @@
 """Exposes HF datasets as DataPipes"""
-from typing import Union
+from typing import Union, Any
 
-import datasets
+try:
+    import datasets
+    _HAS_DATASETS = True
+except ImportError:
+    _HAS_DATASETS = False
+
 from torch.utils.data import IterDataPipe
 
-AnyHfDataset = Union[datasets.Dataset, datasets.IterableDataset]
-AnyHfDatasetDict = Union[datasets.DatasetDict, datasets.IterableDatasetDict]
+if _HAS_DATASETS:
+    AnyHfDataset = Union[datasets.Dataset, datasets.IterableDataset]
+    AnyHfDatasetDict = Union[datasets.DatasetDict, datasets.IterableDatasetDict]
+else:
+    AnyHfDataset = AnyHfDatasetDict = Any
 
 
 class HFDatasetIterPipe(IterDataPipe):

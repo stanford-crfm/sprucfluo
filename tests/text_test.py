@@ -3,7 +3,7 @@ import unittest
 import torch
 from torchdata.datapipes.iter import IterableWrapper
 
-from text import *
+from sprucfluo.text import *
 
 
 class MockTokenizer(object):

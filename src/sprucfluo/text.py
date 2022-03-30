@@ -31,6 +31,8 @@ def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int, stride: O
         yield BatchEncoding(data={k: v[i:i + seq_len] for k, v in concatenated.data.items()})
 
 
+# TODO: support truncation and padding
+# TODO: support mlm
 def tokenize_and_group_texts(pipe: IterDataPipe[str],
                              tokenizer: PreTrainedTokenizerBase,
                              seq_len: int,
