@@ -18,12 +18,13 @@ pubmed_data = IterableWrapper(pubmed_data)
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
 def process_jsonl_corpus(urls: IterDataPipe[str]) -> IterDataPipe[BatchEncoding]:
-    return urls.open_file_by_fsspec_fancy(mode="r", compression="infer") \
+    return urls\
+        .shard_by_node()\
+        .open_file_by_fsspec_fancy(mode="r", compression="infer") \
         .readlines(return_path=False) \
         .map(json.loads) \
         .map(lambda x: x["text"])\
         .then(tokenize_and_group_texts, tokenizer=tokenizer, seq_len=1024)
-
 
 
 pubmed_data = process_jsonl_corpus(pubmed_data)

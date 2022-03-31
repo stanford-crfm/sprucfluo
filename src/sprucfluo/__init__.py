@@ -5,7 +5,7 @@ from torch.utils.data import IterDataPipe
 from sprucfluo.fancy_files import FancyFSSpecFileOpenerIterDataPipe
 from sprucfluo.hf_dataset import HFDatasetIterPipe
 from sprucfluo.text import concatenate_and_group_texts, tokenize_and_group_texts
-from sprucfluo.sharding import ShardByNodeDataPipe, ShardByWorkerDataPipe
+from sprucfluo.sharding import ShardByNodeDataPipe
 
 _T = TypeVar("_T", contravariant=True)
 _U = TypeVar("_U", covariant=True)
@@ -13,7 +13,8 @@ _U = TypeVar("_U", covariant=True)
 
 def _then_data_pipe(data_pipe: IterDataPipe[_T], fn: Callable[[IterDataPipe[_T], ...], IterDataPipe[_U]], *args, **kwargs) -> IterDataPipe[_U]:
     """
-    A helper function to apply a function to a data pipe.
+    A helper function to apply a function to a data pipe. Syntax is:
+    data_pipe.then(fn, *args, **kwargs)
     """
     return fn(data_pipe, *args, **kwargs)
 
@@ -32,7 +33,6 @@ __all__ = [
     'concatenate_and_group_texts',
     'tokenize_and_group_texts',
     'ShardByNodeDataPipe',
-    'ShardByWorkerDataPipe',
 ]
 
 init()
