@@ -1,8 +1,12 @@
 """Routines for dealing with text data, mostly for language modeling"""
+import json
+import os.path
 from functools import partial
 from typing import Optional, Iterator
 
 from torch.utils.data import IterDataPipe
+from torch.utils.data.datapipes.utils.common import StreamWrapper
+import fsspec.compression
 from transformers import BatchEncoding, PreTrainedTokenizerBase
 from itertools import chain
 
@@ -51,3 +55,15 @@ def tokenize_and_group_texts(pipe: IterDataPipe[str],
     return pipe.batch(batch_size=batch_size, wrapper_class=list)\
         .map(tokenizer)\
         .flatmap(partial(concatenate_and_group_texts, seq_len=seq_len, stride=stride))
+
+
+def read_lm_text_file(file_path: str, stream: StreamWrapper, json_text_key: str = "text") -> Iterator[str]:
+    rest_path, file_type = os.path.splitext(file_path)
+
+    if file_type == ".jsonl":
+        for line in stream:
+            yield json.loads(line)[json_text_key]
+    elif file_type == ".txt" or file_type == ".text":
+        yield stream.read().decode("utf-8")
+    else:
+        raise ValueError(f"Unsupported file type {file_type} for {file_path}")
