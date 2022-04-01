@@ -2,7 +2,7 @@ import itertools
 from typing import TypeVar, Iterator, Sized
 
 from torch.utils.data import functional_datapipe, IterDataPipe
-from sprucfluo.utils import pytorch_worker_info
+from .utils import pytorch_worker_info
 
 T_co = TypeVar('T_co', covariant=True)
 
