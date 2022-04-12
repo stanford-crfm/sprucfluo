@@ -1,4 +1,4 @@
-from typing import TypeVar, List, Union, Optional, Any
+from typing import TypeVar, List, Union, Optional, Any, Dict
 
 from braceexpand import braceexpand
 from torch.utils.data import IterDataPipe
@@ -28,7 +28,7 @@ def load_corpus(paths: Union[str, List[str]],
                 shard_by_node: bool = True,
                 cycle: bool = False,
                 json_text_key: str = "text",
-                extra_fsspec_args: Optional[dict[str, Any]] = None) -> IterDataPipe[str]:
+                extra_fsspec_args: Optional[Dict[str, Any]] = None) -> IterDataPipe[str]:
     if extra_fsspec_args is None:
         extra_fsspec_args = {}
     paths = expand_paths(paths)
