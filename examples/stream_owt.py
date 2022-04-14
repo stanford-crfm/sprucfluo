@@ -8,7 +8,7 @@ import sprucfluo
 import sprucfluo.corpus
 from sprucfluo import tokenize_and_group_texts
 
-owt_data = sprucfluo.corpus.load_corpus("libarchive://openwebtext/urlsf_subset00-*_data.xz::foo.tar", expand_globs=True)
+owt_data = sprucfluo.corpus.load_openwebtext()
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 

@@ -6,7 +6,7 @@ from .files import FancyFSSpecFileOpenerIterDataPipe
 from .hf_dataset import HFDatasetIterPipe
 from .sharding import ShardByNodeDataPipe
 from .text import concatenate_and_group_texts, tokenize_and_group_texts, read_lm_text_file
-from .corpus import load_corpus
+from .corpus import load_corpus, expand_paths
 
 _T = TypeVar("_T", contravariant=True)
 _U = TypeVar("_U", covariant=True)

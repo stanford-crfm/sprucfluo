@@ -5,6 +5,11 @@ from torch.utils.data import IterDataPipe
 from .files import expand_paths
 from .text import read_lm_text_file
 
+DEFAULT_OPENWEBTEXT_URL = "https://zenodo.org/record/3834942/files/openwebtext.tar.xz"
+
+
+def load_openwebtext(url: str = DEFAULT_OPENWEBTEXT_URL, cycle: bool = False) -> IterDataPipe[str]:
+    return load_corpus(f"libarchive://openwebtext/urlsf_subset00-*_data.xz::{url}", cycle=cycle, expand_globs=True, extra_fsspec_args={"https": {"block_size": 0}})
 
 def load_corpus(paths: Union[str, List[str]],
                 shard_by_node: bool = True,
