@@ -5,10 +5,11 @@ from torchdata.datapipes.iter.util.samplemultiplexer import SampleMultiplexerDat
 from transformers import AutoTokenizer, BatchEncoding
 
 import sprucfluo
+import sprucfluo.corpus
 from sprucfluo import tokenize_and_group_texts
 
-pile_data = sprucfluo.load_corpus("https://mystic.the-eye.eu/public/AI/pile/train/{00..29}.jsonl.zst")
-pubmed_data = sprucfluo.load_corpus("gcs://pubmed-mosaic/pubmed-sharded/pubmedAbs_train.{1..128}-of-128.jsonl.gz")
+pile_data = sprucfluo.corpus.load_corpus("https://mystic.the-eye.eu/public/AI/pile/train/{00..29}.jsonl.zst")
+pubmed_data = sprucfluo.corpus.load_corpus("gcs://pubmed-mosaic/pubmed-sharded/pubmedAbs_train.{1..128}-of-128.jsonl.gz")
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 

@@ -2,7 +2,7 @@ import json
 
 from transformers import AutoTokenizer
 
-from sprucfluo.fancy_files import FancyFSSpecFileOpenerIterDataPipe
+from sprucfluo.files import FancyFSSpecFileOpenerIterDataPipe
 from sprucfluo.text import tokenize_and_group_texts
 from torchdata.datapipes.iter import IterableWrapper
 

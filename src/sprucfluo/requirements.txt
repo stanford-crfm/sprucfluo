@@ -4,3 +4,4 @@ torchdata
 fsspec
 zstandard
 gcsfs
+python-magic
