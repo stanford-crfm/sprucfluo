@@ -5,11 +5,12 @@ from torch.utils.data import IterDataPipe
 from .files import expand_paths
 from .text import read_lm_text_file
 
-DEFAULT_OPENWEBTEXT_URL = "https://zenodo.org/record/3834942/files/openwebtext.tar.xz"
+# corpus urls:
+# OWT: https://storage.googleapis.com/pubmed-mosaic/openwebtext-sharded/openwebtext_train.{1..128}-of-128.jsonl.gz
+#      https://storage.googleapis.com/pubmed-mosaic/openwebtext-sharded/openwebtext_val.{1..8}-of-8.jsonl.gz
+# medical: "https://storage.googleapis.com/pubmed-mosaic/plain-medical-text-sharded/plain_medical_text_train.{1..128}-of-128.jsonl.gz",
+#          "https://storage.googleapis.com/pubmed-mosaic/plain-medical-text-sharded/plain_medical_text_val.{1..8}-of-8.jsonl.gz",
 
-
-def load_openwebtext(url: str = DEFAULT_OPENWEBTEXT_URL, cycle: bool = False) -> IterDataPipe[str]:
-    return load_corpus(f"libarchive://openwebtext/urlsf_subset00-*_data.xz::{url}", cycle=cycle, expand_globs=True, extra_fsspec_args={"https": {"block_size": 0}})
 
 def load_corpus(paths: Union[str, List[str]],
                 shard_by_node: bool = True,
@@ -32,4 +33,4 @@ def load_corpus(paths: Union[str, List[str]],
         .flatmap(lambda name_stream: read_lm_text_file(name_stream[0], name_stream[1], json_text_key))
 
 
-__all__ = ["load_corpus"]
+__all__ = ["load_corpus", "expand_paths"]

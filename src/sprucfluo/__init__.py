@@ -12,9 +12,6 @@ _T = TypeVar("_T", contravariant=True)
 _U = TypeVar("_U", covariant=True)
 
 
-
-
-
 def _then_data_pipe(data_pipe: IterDataPipe[_T], fn, *args, **kwargs) -> IterDataPipe[_U]:
     """
     A helper function to apply a function to a data pipe. Syntax is:
