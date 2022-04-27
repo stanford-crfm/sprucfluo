@@ -5,14 +5,14 @@ from torch.utils.data import IterDataPipe
 from .files import FancyFSSpecFileOpenerIterDataPipe
 from .hf_dataset import HFDatasetIterPipe
 from .sharding import ShardByRankDataPipe
-from .text import concatenate_and_group_texts, tokenize_and_group_texts, read_lm_text_file
+from .text import concatenate_and_group_texts, tokenize_and_group_texts, read_lm_text_file, deduplicate, batch_tokenize
 from .corpus import load_corpus, expand_paths
 
-_T = TypeVar("_T", contravariant=True)
+_T_contra = TypeVar("_T_contra", contravariant=True)
 _U = TypeVar("_U", covariant=True)
 
 
-def _then_data_pipe(data_pipe: IterDataPipe[_T], fn, *args, **kwargs) -> IterDataPipe[_U]:
+def _then_data_pipe(data_pipe: IterDataPipe[_T_contra], fn, *args, **kwargs) -> IterDataPipe[_U]:
     """
     A helper function to apply a function to a data pipe. Syntax is:
     data_pipe.then(fn, *args, **kwargs)
@@ -35,7 +35,9 @@ __all__ = [
     'read_lm_text_file',
     'tokenize_and_group_texts',
     'ShardByRankDataPipe',
-    'expand_paths'
+    'expand_paths',
+    'deduplicate',
+    'batch_tokenize',
 ]
 
 init()

@@ -1,22 +1,34 @@
 """Routines for dealing with text data, mostly for language modeling"""
 import codecs
+import functools
+import hashlib
 import json
 import os.path
 import re
 import tarfile
 from functools import partial
-from typing import Optional, Iterator
+from typing import Optional, Iterator, TypeVar, Iterable
 
-from torch.utils.data import IterDataPipe
+import numpy as np
+from torch.utils.data import IterDataPipe, functional_datapipe
 from torch.utils.data.datapipes.utils.common import StreamWrapper
 from transformers import BatchEncoding, PreTrainedTokenizerBase
 from itertools import chain
+
+_T = TypeVar("_T", covariant=True)
 
 try:
     import magic
 except ImportError:
     magic = None
 
+
+def _chain_encoding_member(values):
+    """Concatenates a member of a batch encoding dict, which are either lists/sequences or numpy arrays."""
+    if isinstance(values, np.ndarray):
+        return np.concatenate(values)
+    else:
+        return list(chain(*values))
 
 def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int, stride: Optional[int] = None) -> Iterator[BatchEncoding]:
     """Groups texts in a batch together. Typically, you'll want to use this with a fairly large
@@ -30,7 +42,9 @@ def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int, stride: O
     Returns:
         An iterator of tokenized texts, one at a time.
     """
-    concatenated = BatchEncoding(data={k: list(chain(*v)) for k, v in encoding.items()})
+    if stride is None:
+        stride = seq_len
+    concatenated = BatchEncoding(data={k: _chain_encoding_member(v) for k, v in encoding.items()})
     total_length = len(concatenated.input_ids)
     stride = stride or seq_len
 
@@ -40,6 +54,16 @@ def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int, stride: O
     # Split by Chunks of Maximum Length
     for i in range(0, total_length, stride):
         yield BatchEncoding(data={k: v[i:i + seq_len] for k, v in concatenated.data.items()})
+
+
+def _unbatch(batch: BatchEncoding) -> Iterator[BatchEncoding]:
+    for i in range(len(batch.input_ids)):
+        yield BatchEncoding(data={k: v[i] for k, v in batch.data.items()})
+
+
+def batch_tokenize(pipe: IterDataPipe[str], tokenizer: PreTrainedTokenizerBase, batch_size: int = 1000, **kwargs) -> IterDataPipe[BatchEncoding]:
+    return pipe.batch(batch_size=batch_size, wrapper_class=list)\
+        .map(functools.partial(tokenizer, **kwargs))
 
 
 # TODO: support truncation and padding
@@ -62,8 +86,6 @@ def tokenize_and_group_texts(pipe: IterDataPipe[str],
     return pipe.batch(batch_size=batch_size, wrapper_class=list)\
         .map(tokenizer)\
         .flatmap(partial(concatenate_and_group_texts, seq_len=seq_len, stride=stride))
-
-
 
 
 def read_lm_text_file(file_path: str, stream: StreamWrapper, json_text_key: str = "text") -> Iterator[str]:
@@ -134,3 +156,37 @@ file_handlers = {
     'txt': read_text,
     'jsonl': read_jsonl,
 }
+
+
+def _hash(item: _T) -> str:
+    return hashlib.sha256(str(item).encode('utf-8')).hexdigest()
+
+
+def deduplicate(iterable: Iterable[_T], approximate: bool = True) -> Iterator[_T]:
+    seen = set()
+    for item in iterable:
+        h = _hash(item) if approximate else item
+        if h not in seen:
+            seen.add(h)
+            yield item
+
+
+@functional_datapipe("deduplicate")
+class DedupIterDataPipe(IterDataPipe[_T]):
+    """A data pipe that deduplicates the items in the data pipe.
+
+    Args:
+        pipe: The pipe to deduplicate.
+    """
+    def __init__(self, pipe: IterDataPipe[_T], approximate: bool = True):
+        self.pipe = pipe
+        self.approximate = approximate
+
+    def __len__(self):
+        raise ValueError("Can't efficiently compute the length of a deduplicate pipe")
+
+    def __iter__(self):
+        return deduplicate(self.pipe, approximate=self.approximate)
+
+
+

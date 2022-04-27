@@ -5,3 +5,5 @@ fsspec
 zstandard
 gcsfs
 python-magic
+pyarrow
+numpy
