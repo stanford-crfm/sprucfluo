@@ -1,14 +1,6 @@
-# setup.py for sprucfluo
-
-import os
-import site
-import sys
-import textwrap
-
 import setuptools
 from pip._internal.req import parse_requirements
 from setuptools import setup
-from setuptools.command.develop import develop as develop_orig
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()

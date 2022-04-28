@@ -9,6 +9,7 @@ import fsspec
 import fsspec.compression
 import fsspec.utils
 
+
 def expand_paths(paths: Union[str, List[str]]) -> IterDataPipe[str]:
     """
     Expand a list of URLs into a data pipe of URLs.
@@ -67,7 +68,6 @@ class FancyFSSpecFileOpenerIterDataPipe(IterDataPipe[Tuple[str, StreamWrapper]])
         if self.expand_globs:
             raise NotImplementedError("len() not implemented for FancyFSSpecFileOpenerIterDataPipe when expand_globs=True")
         return len(self.source_datapipe)
-
 
 
 __ALL__ = ["expand_paths", "FancyFSSpecFileOpenerIterDataPipe"]
