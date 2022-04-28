@@ -1,7 +1,7 @@
-datasets
-transformers
-torchdata
-fsspec
+datasets>=2
+transformers>=4.17.0
+torchdata>=0.3.0
+fsspec>=2022
 zstandard
 gcsfs
 python-magic
