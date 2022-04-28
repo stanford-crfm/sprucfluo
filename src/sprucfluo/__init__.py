@@ -4,7 +4,7 @@ from torch.utils.data import IterDataPipe
 
 from .files import FancyFSSpecFileOpenerIterDataPipe
 from .hf_dataset import HFDatasetIterPipe
-from .sharding import ShardByNodeDataPipe
+from .sharding import ShardByRankDataPipe
 from .text import concatenate_and_group_texts, tokenize_and_group_texts, read_lm_text_file
 from .corpus import load_corpus, expand_paths
 
@@ -34,7 +34,7 @@ __all__ = [
     'concatenate_and_group_texts',
     'read_lm_text_file',
     'tokenize_and_group_texts',
-    'ShardByNodeDataPipe',
+    'ShardByRankDataPipe',
     'expand_paths'
 ]
 
