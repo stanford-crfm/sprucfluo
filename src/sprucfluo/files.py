@@ -49,6 +49,8 @@ class FancyFSSpecFileOpenerIterDataPipe(IterDataPipe[Tuple[str, StreamWrapper]])
     def __iter__(self) -> Iterator[Tuple[str, StreamWrapper]]:
         for file_uri in self.source_datapipe:
             if self.expand_globs:
+                # TODO: the globbing in fsspec is pretty bad, leading to I believe O(n^2) behavior for tar files
+                # Would be better if it were generator-based... and there's really no reason it couldn't be
                 files = fsspec.open_files(file_uri, **self.kwargs)
             else:
                 files = [fsspec.open(file_uri, **self.kwargs)]
