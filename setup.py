@@ -19,7 +19,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://www.github.com/stanford-crfm/sprucfluo",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(where="src", exclude=('tests',)),
+    package_dir={'sprucfluo': 'src/sprucfluo'},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
@@ -27,5 +28,7 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     python_requires=">=3.7",
-    install_requires=reqs
+    install_requires=reqs,
+    license="Apache 2.0",
+    ext_package='sprucfluo',
 )
