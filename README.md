@@ -1,4 +1,4 @@
-# Sprufluo: Streaming Datasets for Large Language Models
+# Sprucfluo: Streaming Datasets for Large Language Models
 
 This is a library to support streaming datasets for large language models. It's centered around [TorchData](https://github.com/pytorch/data),
 which is a library of combinators around torch Datasets. It uses HuggingFace for tokenization, and fsspec for reading files
