@@ -19,6 +19,7 @@ from .files import FancyFSSpecFileOpenerIterDataPipe, expand_paths
 from .sharding import ShardByRankDataPipe
 from .text import concatenate_and_group_texts, tokenize_and_group_texts, read_lm_text_file
 from .corpus import load_corpus
+from .shuffle import SeededShufflerIterDataPipe
 
 _T = TypeVar("_T", contravariant=True)
 _U = TypeVar("_U", covariant=True)
@@ -43,12 +44,12 @@ def init():
 
 __all__ = [
     'FancyFSSpecFileOpenerIterDataPipe',
-    'HFDatasetIterPipe',
     'concatenate_and_group_texts',
     'read_lm_text_file',
     'tokenize_and_group_texts',
     'ShardByRankDataPipe',
-    'expand_paths'
+    'expand_paths',
+    'SeededShufflerIterDataPipe',
 ]
 
 init()
