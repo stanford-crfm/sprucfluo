@@ -20,7 +20,8 @@ setup(
     long_description_content_type="text/markdown",
     url="https://www.github.com/stanford-crfm/sprucfluo",
     packages=setuptools.find_packages(where="src", exclude=('tests',)),
-    package_dir={'sprucfluo': 'src/sprucfluo'},
+    # https://stackoverflow.com/questions/70777486/pip-install-e-doesnt-allow-to-import-via-package-dir
+    package_dir={'': 'src/'},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
