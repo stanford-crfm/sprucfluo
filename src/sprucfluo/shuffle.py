@@ -1,5 +1,5 @@
 import random
-from typing import Tuple, Iterator, Union, List, TypeVar
+from typing import Tuple, Iterator, Union, List, TypeVar, Sized
 
 from torch.utils.data import functional_datapipe, IterDataPipe
 
