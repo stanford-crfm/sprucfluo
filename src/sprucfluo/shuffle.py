@@ -36,7 +36,7 @@ class SeededShufflerIterDataPipe(IterDataPipe[T_co]):
         buffer = []
         for x in self.datapipe:
             if len(buffer) == self.buffer_size:
-                yield ShufflerIterDataPipe.buffer_replace(generator, buffer, x)
+                yield SeededShufflerIterDataPipe.buffer_replace(generator, buffer, x)
             else:
                 buffer.append(x)
         generator.shuffle(buffer)
