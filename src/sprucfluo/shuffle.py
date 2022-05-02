@@ -22,23 +22,24 @@ class SeededShufflerIterDataPipe(IterDataPipe[T_co]):
         assert buffer_size > 0, "buffer_size should be larger than 0"
         self.datapipe = datapipe
         self.buffer_size = buffer_size
-        self.generator = random.Random(seed)
+        self.seed = seed
 
     @staticmethod
-    def buffer_replace(buffer, x):
-        idx = self.generator.randint(0, len(buffer) - 1)
+    def buffer_replace(generator, buffer, x):
+        idx = generator.randint(0, len(buffer) - 1)
         val = buffer[idx]
         buffer[idx] = x
         return val
 
     def __iter__(self) -> Iterator[T_co]:
+        generator = random.Random(self.seed)
         buffer = []
         for x in self.datapipe:
             if len(buffer) == self.buffer_size:
-                yield ShufflerIterDataPipe.buffer_replace(buffer, x)
+                yield ShufflerIterDataPipe.buffer_replace(generator, buffer, x)
             else:
                 buffer.append(x)
-        self.generator.shuffle(buffer)
+        generator.shuffle(buffer)
         while buffer:
             yield buffer.pop()
 
