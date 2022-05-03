@@ -1,6 +1,5 @@
 import unittest
 
-import torch
 from torchdata.datapipes.iter import IterableWrapper
 
 from sprucfluo.text import *
