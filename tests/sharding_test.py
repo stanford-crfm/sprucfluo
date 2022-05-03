@@ -32,40 +32,25 @@ class FlatShardTest(unittest.TestCase):
     # node 1: [1, 1, 1, 4, 4, 4, 7, 7, 7, 9]
     # node 2: [2, 2, 2, 5, 5, 5, 8, 8, 8, 9]
 
-    # If there are 4 nodes, and drop_to_enforce_evenness == True then the shards will be:
-    # node 0: [0, 0, 0, 4, 4, 4, 8, 9]
-    # node 1: [1, 1, 1, 5, 5, 5, 8, 9]
-    # node 2: [2, 2, 2, 6, 6, 6, 8, 10]
-    # node 3: [3, 3, 3, 7, 7, 7, 9, 10]
-
-    # If there are 4 nodes, and drop_to_enforce_evenness == False then the shards will be:
+    # If there are 4 nodes then the shards will be:
     # node 0: [0, 0, 0, 4, 4, 4, 8, 9, 10]
     # node 1: [1, 1, 1, 5, 5, 5, 8, 9]
     # node 2: [2, 2, 2, 6, 6, 6, 8, 10]
     # node 3: [3, 3, 3, 7, 7, 7, 9, 10]
 
-    def do_test(self, enforce_evenness: bool, rank: int, world_size: int):
+    def do_test(self, rank: int, world_size: int):
         with with_env(RANK=rank, WORLD_SIZE=world_size):
-            return list(self.ex.flat_shard_by_rank(lambda it: (y for x in it for y in [x] * 3),
-                                                   drop_to_enforce_evenness=enforce_evenness))
+            return list(self.ex.flat_shard_by_rank(lambda it: (y for x in it for y in [x] * 3)))
 
     def test_flat_shard_by_rank_3(self):
-        results = [self.do_test(True, i, 3) for i in range(3)]
+        results = [self.do_test(i, 3) for i in range(3)]
         expected = [[0, 0, 0, 3, 3, 3, 6, 6, 6, 9, 10],
                     [1, 1, 1, 4, 4, 4, 7, 7, 7, 9, 10],
                     [2, 2, 2, 5, 5, 5, 8, 8, 8, 9, 10]]
         self.assertEqual(results, expected)
 
-    def test_flat_shard_by_rank_4_enforce(self):
-        results = [self.do_test(True, i, 4) for i in range(4)]
-        expected = [[0, 0, 0, 4, 4, 4, 8, 9],
-                    [1, 1, 1, 5, 5, 5, 8, 9],
-                    [2, 2, 2, 6, 6, 6, 8, 10],
-                    [3, 3, 3, 7, 7, 7, 9, 10]]
-        self.assertEqual(results, expected)
-
     def test_flat_shard_by_rank_4_no_enforce(self):
-        results = [self.do_test(False, i, 4) for i in range(4)]
+        results = [self.do_test(i, 4) for i in range(4)]
         expected = [[0, 0, 0, 4, 4, 4, 8, 9, 10],
                     [1, 1, 1, 5, 5, 5, 8, 9],
                     [2, 2, 2, 6, 6, 6, 8, 10],

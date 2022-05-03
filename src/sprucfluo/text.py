@@ -77,8 +77,6 @@ def tokenize_and_group_texts(pipe: IterDataPipe[str],
         .flatmap(partial(concatenate_and_group_texts, seq_len=seq_len, stride=stride))
 
 
-
-
 def read_lm_text_file(file_path: str, stream: StreamWrapper, json_text_key: str = "text") -> Iterator[str]:
     rest_path, file_type = os.path.splitext(file_path)
     file_type = file_type.lstrip('.')

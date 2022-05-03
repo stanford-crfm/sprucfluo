@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Union, List, Optional, Dict, Any
+import functools
+from typing import Union, List, Optional, Dict, Any, Iterable
 
 from torch.utils.data import IterDataPipe
+from torchdata.datapipes.iter import IterableWrapper
 
 from .files import expand_paths
 from .text import read_lm_text_file
@@ -42,8 +44,28 @@ def load_corpus(paths: Union[str, List[str]],
     if cycle:
         paths = paths.cycle()
 
+    extra_fsspec_args = extra_fsspec_args or {}
+
     if shard_by_rank:
-        paths = paths.shard_by_rank()
+        return paths.flat_shard_by_rank(
+            functools.partial(
+                _open_and_read_text_files,
+                expand_globs=expand_globs,
+                json_text_key=json_text_key,
+                extra_fsspec_args=extra_fsspec_args))
+    else:
+        return _open_and_read_text_files(paths, expand_globs, json_text_key, extra_fsspec_args)
+
+
+def _open_and_read_text_files(paths: Union[Iterable[str], IterDataPipe[str]],
+                              expand_globs: bool,
+                              json_text_key: str,
+                              extra_fsspec_args: Optional[Dict[str, Any]] = None) -> IterDataPipe[str]:
+    if extra_fsspec_args is None:
+        extra_fsspec_args = {}
+
+    if not isinstance(paths, IterDataPipe):
+        paths = IterableWrapper(paths)
 
     return paths \
         .open_file_by_fsspec_fancy(expand_globs=expand_globs, mode="r", compression="infer", **extra_fsspec_args) \

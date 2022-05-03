@@ -65,34 +65,28 @@ class FlatShardByRankDataPipe(IterDataPipe[T_co]):
         # node 1: [1, 1, 1, 4, 4, 4, 7, 7, 7, 9, 10]
         # node 2: [1, 1, 1, 4, 4, 4, 7, 7, 7, 9, 10]
 
-        If there are 4 nodes, and drop_to_enforce_evenness==True then the shards will be:
-        # node 0: [0, 0, 0, 4, 4, 4, 8, 9]
-        # node 1: [1, 1, 1, 5, 5, 5, 8, 9]
-        # node 2: [2, 2, 2, 6, 6, 6, 8, 10]
-        # node 3: [3, 3, 3, 7, 7, 7, 9, 10]
-
-        If there are 4 nodes, and drop_to_enforce_evenness==False then the shards will be:
+        If there are 4 nodes, then the shards will be:
         # node 0: [0, 0, 0, 4, 4, 4, 8, 9, 10]
         # node 1: [1, 1, 1, 5, 5, 5, 8, 9]
         # node 2: [2, 2, 2, 6, 6, 6, 8, 10]
         # node 3: [3, 3, 3, 7, 7, 7, 9, 10]
 
-        drop_to_enforce_evenness is necessary for ddp.
+        Note that we don't enforce that each node sees the same number of examples, and
+        this can in theory be highly imbalanced if This should be enforced
+        at the dataloader level...
     """
     # TODO: We could be fancier and subdivide the remainder, but that makes enforcing evenness a bit trickier.
     def __init__(self,
                  source_datapipe: IterDataPipe[U_contra],
-                 fn: Callable[[Iterable[U_contra]], Iterable[T_co]],
-                 drop_to_enforce_evenness: bool = False) -> None:
+                 fn: Callable[[Iterable[U_contra]], Iterable[T_co]]) -> None:
         self.source_datapipe: IterDataPipe[U_contra] = source_datapipe
         self.fn = fn
-        self.drop_to_enforce_evenness = drop_to_enforce_evenness
         self._chunk: Optional[List[U_contra]] = None
 
     def __iter__(self) -> Iterator[T_co]:
         rank, world_size, _, _ = pytorch_worker_info()
         if world_size == 1:
-            return self.fn(self.source_datapipe)
+            yield from self.fn(self.source_datapipe)
         else:
             it = iter(self.source_datapipe)
 
@@ -102,7 +96,6 @@ class FlatShardByRankDataPipe(IterDataPipe[T_co]):
             if self._chunk:
                 yield from self._handle_remnant(self._chunk, rank, world_size)
                 self._chunk = None
-
 
     @staticmethod
     def _take(it: Iterator[T], n: int) -> List[T]:
@@ -128,9 +121,8 @@ class FlatShardByRankDataPipe(IterDataPipe[T_co]):
             yield next_chunk[rank]
             next_chunk = FlatShardByRankDataPipe._take(all_remaining, world_size)
 
-        if not self.drop_to_enforce_evenness:
-            if rank < len(next_chunk):
-                yield next_chunk[rank]
+        if rank < len(next_chunk):
+            yield next_chunk[rank]
 
 
 
