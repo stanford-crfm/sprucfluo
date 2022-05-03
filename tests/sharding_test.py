@@ -46,7 +46,7 @@ class FlatShardTest(unittest.TestCase):
 
     def do_test(self, enforce_evenness: bool, rank: int, world_size: int):
         with with_env(RANK=rank, WORLD_SIZE=world_size):
-            return list(self.ex.flat_shard_by_rank(lambda subpipe: subpipe.flatmap(lambda x: [x, x, x]),
+            return list(self.ex.flat_shard_by_rank(lambda it: (y for x in it for y in [x] * 3),
                                                    drop_to_enforce_evenness=enforce_evenness))
 
     def test_flat_shard_by_rank_3(self):

@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import itertools
-from typing import TypeVar, Iterator, Sized, Callable, List
+from typing import TypeVar, Iterator, Sized, Callable, List, Iterable, Optional
 
 from torch.utils.data import functional_datapipe, IterDataPipe
-from torchdata.datapipes.iter import IterableWrapper
 from .utils import pytorch_worker_info
 
 T_co = TypeVar('T_co', covariant=True)
@@ -59,7 +58,7 @@ class FlatShardByRankDataPipe(IterDataPipe[T_co]):
 
         Example:
             ex = IterableWrapper(list(range(10)))
-            sharded = ex.flat_shard_by_rank(lambda subpipe: subpipe.flatmap(lambda x: [x, x, x]))
+            sharded = ex.flat_shard_by_rank(lambda it: (y for x in it for y in [x] * 3))
 
         # if there are 3 nodes, then the shards will be:
         # node 0: [0, 0, 0, 3, 3, 3, 6, 6, 6, 9, 10]
@@ -83,15 +82,12 @@ class FlatShardByRankDataPipe(IterDataPipe[T_co]):
     # TODO: We could be fancier and subdivide the remainder, but that makes enforcing evenness a bit trickier.
     def __init__(self,
                  source_datapipe: IterDataPipe[U_contra],
-                 fn: Callable[[IterDataPipe[U_contra]], IterDataPipe[T_co]],
+                 fn: Callable[[Iterable[U_contra]], Iterable[T_co]],
                  drop_to_enforce_evenness: bool = False) -> None:
         self.source_datapipe: IterDataPipe[U_contra] = source_datapipe
         self.fn = fn
         self.drop_to_enforce_evenness = drop_to_enforce_evenness
-
-    @staticmethod
-    def _take(it: Iterator[T], n: int) -> List[T]:
-        return list(itertools.islice(it, n))
+        self._chunk: Optional[List[U_contra]] = None
 
     def __iter__(self) -> Iterator[T_co]:
         rank, world_size, _, _ = pytorch_worker_info()
@@ -99,17 +95,32 @@ class FlatShardByRankDataPipe(IterDataPipe[T_co]):
             return self.fn(self.source_datapipe)
         else:
             it = iter(self.source_datapipe)
-            next_chunk = FlatShardByRankDataPipe._take(it, world_size)
 
-            while len(next_chunk) == world_size:
-                yield from self.fn(IterableWrapper([next_chunk[rank]]))
-                next_chunk = FlatShardByRankDataPipe._take(it, world_size)
+            yield from self.fn(self._yield_while_chunks(it, rank, world_size))
 
             # we're in the remainder, so every rank will look at each shard
-            yield from self._handle_remnant(next_chunk, rank, world_size)
+            if self._chunk:
+                yield from self._handle_remnant(self._chunk, rank, world_size)
+                self._chunk = None
+
+
+    @staticmethod
+    def _take(it: Iterator[T], n: int) -> List[T]:
+        return list(itertools.islice(it, n))
+
+    def _yield_while_chunks(self, it: Iterator[T], rank: int, world_size: int) -> Iterator[T]:
+        next_chunk = FlatShardByRankDataPipe._take(it, world_size)
+
+        while len(next_chunk) == world_size:
+            yield next_chunk[rank]
+            next_chunk = FlatShardByRankDataPipe._take(it, world_size)
+
+        if len(next_chunk) < world_size:
+            # ugh state
+            self._chunk = next_chunk
 
     def _handle_remnant(self, shards: List[U_contra], rank, world_size):
-        all_remaining = iter(self.fn(IterableWrapper(shards)))
+        all_remaining = iter(self.fn(shards))
 
         next_chunk = FlatShardByRankDataPipe._take(all_remaining, world_size)
 
