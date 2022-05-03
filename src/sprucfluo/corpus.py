@@ -62,6 +62,9 @@ def _open_and_read_text_files(paths: Union[Iterable[str], IterDataPipe[str]],
     if not isinstance(paths, IterDataPipe):
         paths = IterableWrapper(paths)
 
+    # TODO: may want to bring back cycle support, cycling through texts instead?
+    # Cycle at path level is a bad idea with shard_by_rank if the number of paths
+    # is < number of nodes
     return paths \
         .open_file_by_fsspec_fancy(expand_globs=expand_globs, mode="r", compression="infer", **extra_fsspec_args) \
         .flatmap(lambda name_stream: read_lm_text_file(name_stream[0], name_stream[1], json_text_key))
