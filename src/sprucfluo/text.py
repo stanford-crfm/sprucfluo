@@ -13,6 +13,7 @@
 # limitations under the License.
 """Routines for dealing with text data, mostly for language modeling"""
 import codecs
+import copy
 import json
 import os.path
 import re
@@ -20,6 +21,7 @@ import tarfile
 from functools import partial
 from typing import Optional, Iterator
 
+import numpy as np
 from torch.utils.data import IterDataPipe
 from torch.utils.data.datapipes.utils.common import StreamWrapper
 from transformers import BatchEncoding, PreTrainedTokenizerBase
@@ -31,14 +33,21 @@ except ImportError:
     magic = None
 
 
-def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int, stride: Optional[int] = None) -> Iterator[BatchEncoding]:
+def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int,
+                                stride: Optional[int] = None,
+                                drop_remainder: bool = True,
+                                mask_stride_overlap=True) -> Iterator[BatchEncoding]:
     """Groups texts in a batch together. Typically, you'll want to use this with a fairly large
     set of texts, e.g. 1000 docs.
+
+    You should set max_stride_overlap to True and drop_remainder to False if you want to use this for test data
 
     Args:
         encoding: The batch of texts to concatenate and group.
         seq_len: The max length of sequences to emit
         stride: The stride to use when grouping texts. If None, then the stride is set to seq_len.
+        mask_stride_overlap: Whether to mask out overlapping tokens if we're using a stride.
+        drop_remainder: Whether to drop the last batch if it's not a multiple of the seq_len.
 
     Returns:
         An iterator of tokenized texts, one at a time.
@@ -48,11 +57,34 @@ def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int, stride: O
     stride = stride or seq_len
 
     # Drop the "very last" bit of the dataset that doesn't fit into block size...
-    total_length = ((total_length - seq_len + stride) // stride) * stride
+    if total_length % stride != 0 and drop_remainder:
+        total_length = ((total_length - seq_len + stride) // stride) * stride
 
     # Split by Chunks of Maximum Length
-    for i in range(0, total_length, stride):
-        yield BatchEncoding(data={k: v[i:i + seq_len] for k, v in concatenated.data.items()})
+    # we want to take chunks up until we've covered all "total_length" tokens with a sliding window of size "stride"
+    for begin in range(0, total_length - seq_len + stride, stride):
+        data = {k: v[begin:begin+seq_len] for k, v in concatenated.items()}
+
+        if mask_stride_overlap and stride != seq_len:
+            labels = data.get("labels", data["input_ids"])
+            if begin != 0:
+                labels = _mask_overlap(labels, seq_len, stride, -100)
+            data["labels"] = labels
+
+        yield BatchEncoding(data=data)
+
+
+# -100 is pytorch's label mask
+def _mask_overlap(labels, target_len, stride, sentinel):
+    labels = copy.deepcopy(labels)
+    if isinstance(labels, list):
+        for i in range(target_len - stride):
+            if i < len(labels):
+                labels[i] = sentinel
+    else:
+        labels[0:target_len - stride] = -100
+
+    return labels
 
 
 # TODO: support truncation and padding
@@ -61,7 +93,10 @@ def tokenize_and_group_texts(pipe: IterDataPipe[str],
                              tokenizer: PreTrainedTokenizerBase,
                              seq_len: int,
                              batch_size: int = 1000,
-                             stride: Optional[int] = None) -> IterDataPipe[BatchEncoding]:
+                             stride: Optional[int] = None,
+                             drop_remainder: bool = True,
+                             mask_stride_overlap=True
+                             ) -> IterDataPipe[BatchEncoding]:
     """Processes a set of texts for language modeling. Tokenizes, groups texts together, and splits them into sequences
     of length seq_len tokens each.
 
@@ -71,10 +106,13 @@ def tokenize_and_group_texts(pipe: IterDataPipe[str],
         seq_len: The length of sequences to emit.
         batch_size: The batch size to use for tokenizing and grouping
         stride: The stride to use when grouping texts. If None, then the stride is set to seq_len.
+        drop_remainder: Whether to drop the last batch if it's not a multiple of the seq_len.
+        mask_stride_overlap: Whether to mask out overlapping tokens if we're using a stride.
     """
     return pipe.batch(batch_size=batch_size, wrapper_class=list)\
         .map(tokenizer)\
-        .flatmap(partial(concatenate_and_group_texts, seq_len=seq_len, stride=stride))
+        .flatmap(partial(concatenate_and_group_texts, seq_len=seq_len, stride=stride,
+                         mask_stride_overlap=mask_stride_overlap, drop_remainder=drop_remainder))
 
 
 def read_lm_text_file(file_path: str, stream: StreamWrapper, json_text_key: str = "text") -> Iterator[str]:
