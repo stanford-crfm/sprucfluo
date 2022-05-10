@@ -68,21 +68,21 @@ def concatenate_and_group_texts(encoding: BatchEncoding, seq_len: int,
         if mask_stride_overlap and stride != seq_len:
             labels = data.get("labels", data["input_ids"])
             if begin != 0:
-                labels = _mask_overlap(labels, seq_len, stride, -100)
+                labels = _mask_overlap(labels, seq_len, stride)
             data["labels"] = labels
 
         yield BatchEncoding(data=data)
 
 
 # -100 is pytorch's label mask
-def _mask_overlap(labels, target_len, stride, sentinel):
+def _mask_overlap(labels, target_len, stride, sentinel=-100):
     labels = copy.deepcopy(labels)
     if isinstance(labels, list):
         for i in range(target_len - stride):
             if i < len(labels):
                 labels[i] = sentinel
     else:
-        labels[0:target_len - stride] = -100
+        labels[0:target_len - stride] = sentinel
 
     return labels
 
